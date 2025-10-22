@@ -39,4 +39,5 @@ npm run dev
 <img width="1853" height="1027" alt="Capture d'écran 2025-10-22 181636" src="https://github.com/user-attachments/assets/8d592f29-5a23-46d4-bea7-86c32ac8efd2" />
 
 ## 📄 Licence
-[LICENSE](LICENSE.md)
+[LICENSE](LICENSE)
+
