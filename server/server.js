@@ -186,201 +186,51 @@ où $C \\in \\mathbb{R}$ est la constante d'intégration."`,
 };
 
 // ============================================
-// FILTRAGE MATHÉMATIQUE STRICT
+// FILTRAGE MATHÉMATIQUE INTELLIGENT (IA)
 // ============================================
-// const mathKeywords = [
-//   // Opérations de base
-//   "calcul",
-//   "calculer",
-//   "résoudre",
-//   "résous",
-//   "trouve",
-//   "combien",
 
-//   // Concepts mathématiques
-//   "équation",
-//   "inéquation",
-//   "fonction",
-//   "dérivée",
-//   "intégrale",
-//   "limite",
-//   "suite",
-//   "série",
-//   "somme",
-//   "produit",
-//   "facteur",
-//   "diviseur",
+// Pré-filtrage rapide par l'IA elle-même
+async function isMathQuestionAI(message) {
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: `Tu es un classificateur. Réponds UNIQUEMENT par "OUI" ou "NON".
 
-//   // Géométrie
-//   "triangle",
-//   "carré",
-//   "cercle",
-//   "rectangle",
-//   "angle",
-//   "aire",
-//   "volume",
-//   "périmètre",
-//   "pythagore",
-//   "thalès",
-//   "vecteur",
-//   "coordonnées",
+La question concerne-t-elle les MATHÉMATIQUES (calculs, géométrie, algèbre, fonctions, probabilités, etc.) ?
 
-//   // Algèbre
-//   "fraction",
-//   "racine",
-//   "puissance",
-//   "exposant",
-//   "logarithme",
-//   "exponentielle",
-//   "polynôme",
-//   "factoriser",
-//   "développer",
-//   "simplifier",
+Pense brièvement avant de répondre, mais NE MONTRE PAS ta réflexion.
 
-//   // Probabilités & Stats
-//   "probabilité",
-//   "statistique",
-//   "moyenne",
-//   "médiane",
-//   "écart-type",
-//   "variance",
-//   "loi",
-//   "distribution",
+Exemples OUI :
+- "Résous 2x+5=13"
+- "Explique la trigonométrie"
+- "Comment calculer une aire ?"
 
-//   // Mots clés généraux
-//   "mathématique",
-//   "maths",
-//   "math",
-//   "nombre",
-//   "chiffre",
-//   "géométrie",
-//   "algèbre",
-//   "analyse",
-//   "arithmétique",
-//   "trigonométrie",
-// ];
+Exemples NON :
+- "Quelle est la capitale de la France ?"
+- "Décris un animal"
+- "Comment cuisiner un gâteau ?"
 
-function stripAccents(s) {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
+Réponds uniquement "OUI" ou "NON".`,
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+      temperature: 0.1, // Très déterministe
+      max_tokens: 5, // Juste "OUI" ou "NON"
+    });
 
-const mathKeywordsRaw = [
-  // Opérations / verbes
-  "calcul",
-  "calculer",
-  "résoudre",
-  "résous",
-  "trouve",
-  "combien",
-
-  // Concepts
-  "equation",
-  "inequation",
-  "fonction",
-  "derivee",
-  "derivée",
-  "integrale",
-  "intégrale",
-  "limite",
-  "suite",
-  "serie",
-  "somme",
-  "produit",
-  "facteur",
-  "diviseur",
-
-  // Géométrie
-  "triangle",
-  "carre",
-  "cercle",
-  "rectangle",
-  "angle",
-  "aire",
-  "volume",
-  "perimetre",
-  "pythagore",
-  "thales",
-  "vecteur",
-  "coordonnees",
-
-  // Algèbre
-  "fraction",
-  "racine",
-  "puissance",
-  "exposant",
-  "logarithme",
-  "exponentielle",
-  "polynome",
-  "polynôme",
-  "factoriser",
-  "developper",
-  "simplifier",
-
-  // Probabilités & Stats
-  "probabilite",
-  "probabilité",
-  "statistique",
-  "moyenne",
-  "mediane",
-  "ecart-type",
-  "variance",
-  "loi",
-
-  // Spécifiques / second degré
-  "second degre",
-  "second degré",
-  "degre",
-  "discriminant",
-  "delta",
-  "quadratique",
-  "x^2",
-  "ax^2",
-
-  // Mots généraux
-  "math",
-  "maths",
-  "mathematique",
-  "mathematiques",
-  "arithmetique",
-  "trigonometrie",
-];
-
-// Pré-calcul : mots-clés sans accents, en minuscule
-const mathKeywords = mathKeywordsRaw.map((k) => stripAccents(k.toLowerCase()));
-
-function isMathQuestion(text) {
-  if (!text || typeof text !== "string") return false;
-
-  const lowerText = stripAccents(text.toLowerCase());
-
-  // 1) Vérifie mots-clés (avec word boundaries pour éviter faux positifs)
-  const hasKeyword = mathKeywords.some((kw) => {
-    // si mot-clé contient espace, teste la phrase complète, sinon mot entier
-    if (kw.includes(" ")) {
-      return lowerText.includes(kw);
-    } else {
-      return new RegExp(`\\b${kw}\\b`).test(lowerText);
-    }
-  });
-
-  // 2) Détection d'expressions mathématiques (ex : "3x + 5", "x^2", "ax^2 + bx + c")
-  const hasMathExpression =
-    /\d+\s*[+\-×*/^=]\s*\d+/.test(text) || // opérations avec chiffres
-    /[a-z]\s*\^\s*2/.test(lowerText) || // x^2 ou x ^2
-    /\b(ax\^2|x\^2|ax2|x2|delta|discriminant)\b/.test(lowerText) ||
-    /[xyztuv]\s*[+\-*/=]/.test(lowerText) || // variable suivie d'un opérateur
-    /\b(sin|cos|tan|log|ln)\b/.test(lowerText);
-
-  // 3) Phrases clés (ex: "second degre", "equation du second degre", "resolution")
-  const phraseKeys = [
-    "second degre",
-    "equation du second degre",
-    "resolution du second degre",
-    "resoudre un polynome",
-  ];
-  const hasPhrase = phraseKeys.some((p) => lowerText.includes(stripAccents(p)));
-
-  return hasKeyword || hasMathExpression || hasPhrase;
+    const answer = response.choices[0]?.message?.content.trim().toUpperCase();
+    return answer === "OUI";
+  } catch (error) {
+    console.error("Erreur classification IA:", error);
+    // En cas d'erreur API, on laisse passer (meilleure UX)
+    return true;
+  }
 }
 
 // ============================================
@@ -395,8 +245,10 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Message et niveau requis" });
     }
 
-    // 🚫 FILTRAGE : Refuse si pas mathématiques
-    if (!isMathQuestion(message)) {
+    // 🚫 FILTRAGE INTELLIGENT : L'IA vérifie si c'est une question math
+    const isMath = await isMathQuestionAI(message); // ✅ AWAIT obligatoire
+
+    if (!isMath) {
       return res.json({
         response:
           "Désolé — je suis spécialisé uniquement en **mathématiques** (niveaux 6ᵉ → Terminale). Je ne peux pas répondre à ce sujet. 😅\n\nSi tu as une question de **mathématiques**, je peux t'aider avec plaisir ! 📐✨",
@@ -425,7 +277,7 @@ app.post("/api/chat", async (req, res) => {
 
     // Appel API Groq
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile", // Modèle gratuit ultra-rapide
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
@@ -471,11 +323,6 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-console.log(isMathQuestion("Explique la résolution d'une équation du second dégré")); // true
-console.log(isMathQuestion("Comment calculer l'aire d'un triangle ?")); // true
-console.log(isMathQuestion("Qui est le président ?")); // false
-console.log(isMathQuestion("Résous 3x + 5 = 11")); // true
 
 // ============================================
 // DÉMARRAGE SERVEUR
